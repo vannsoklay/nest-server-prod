@@ -3,25 +3,28 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/infrastructure/database/prisma.service';
 
-/**
- * Auth E2E simulation tests.
- *
- * Requires live PostgreSQL and Redis (use docker-compose.dev.yml to start them).
- * Each test run registers a unique user so tests are idempotent.
- */
-describe('Auth (e2e)', () => {
+describe('Merchant auth and authorization (e2e)', () => {
   let app: INestApplication<App>;
 
-  const unique = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const unique = () =>
+    Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const registration = (suffix = unique()) => ({
+    merchantName: `Test Store ${suffix}`,
+    fullName: 'Test Owner',
+    email: `owner-${suffix}@example.com`,
+    password: 'StrongPassword123!',
+  });
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
-
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
   });
 
@@ -29,180 +32,246 @@ describe('Auth (e2e)', () => {
     await app.close();
   });
 
-  // ─── Register ───────────────────────────────────────────────────────────────
+  it('registers an owner, merchant, session, and merchant permissions', async () => {
+    const payload = registration();
+    const response = await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send(payload)
+      .expect(201);
 
-  describe('POST /auth/register', () => {
-    it('registers a new user and returns a JWT', async () => {
-      const email = `test-${unique()}@example.com`;
+    expect(response.body.data).toMatchObject({
+      accessToken: expect.any(String),
+      refreshToken: expect.any(String),
+      user: {
+        email: payload.email,
+        fullName: payload.fullName,
+      },
+      activeMerchant: {
+        role: 'owner',
+        permissions: expect.arrayContaining([
+          'merchant.read',
+          'user.invite',
+          'payment.provider_manage',
+        ]),
+      },
+    });
+    expect(response.body.data.user.passwordHash).toBeUndefined();
+  });
 
-      const res = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ email, password: 'password123', name: 'Test User' })
-        .expect(201);
+  it('rejects duplicate email registration', async () => {
+    const payload = registration();
+    await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send(payload)
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send({ ...payload, merchantName: 'Another Merchant' })
+      .expect(409);
+  });
 
-      expect(res.body).toMatchObject({
-        access_token: expect.any(String),
-        user: {
-          email,
-          name: 'Test User',
-          role: 'USER',
+  it('validates registration input', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send({ email: 'invalid', password: 'short' })
+      .expect(400);
+  });
+
+  it('logs in, reads the profile, and accesses the active merchant', async () => {
+    const payload = registration();
+    await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send(payload)
+      .expect(201);
+
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: payload.email, password: payload.password })
+      .expect(200);
+    const token = login.body.data.accessToken;
+    const merchantId = login.body.data.activeMerchant.merchant.id;
+
+    const profile = await request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(profile.body.data.user.email).toBe(payload.email);
+    expect(profile.body.data.user.passwordHash).toBeUndefined();
+
+    await request(app.getHttpServer())
+      .get('/merchant')
+      .set('Authorization', `Bearer ${token}`)
+      .set('X-Merchant-ID', merchantId)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/merchant')
+      .set('Authorization', `Bearer ${token}`)
+      .set('X-Merchant-ID', '00000000-0000-4000-8000-000000000000')
+      .expect(403);
+  });
+
+  it('rejects incorrect credentials and missing access tokens', async () => {
+    const payload = registration();
+    await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send(payload)
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: payload.email, password: 'WrongPassword123!' })
+      .expect(401);
+    await request(app.getHttpServer()).get('/auth/me').expect(401);
+  });
+
+  it('rotates refresh tokens and revokes the session on logout', async () => {
+    const registered = await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send(registration())
+      .expect(201);
+
+    const firstRefreshToken = registered.body.data.refreshToken;
+    const rotated = await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .send({ refreshToken: firstRefreshToken })
+      .expect(200);
+    expect(rotated.body.data.refreshToken).not.toBe(firstRefreshToken);
+
+    await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .send({ refreshToken: firstRefreshToken })
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .post('/auth/logout')
+      .set('Authorization', `Bearer ${rotated.body.data.accessToken}`)
+      .expect(200);
+    await request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${rotated.body.data.accessToken}`)
+      .expect(401);
+  });
+
+  it('creates, switches, updates, and summarizes an isolated merchant', async () => {
+    const suffix = unique();
+    const registered = await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send(registration(suffix))
+      .expect(201);
+    const originalToken = registered.body.data.accessToken;
+    const originalMerchantId = registered.body.data.activeMerchant.merchant.id;
+
+    const created = await request(app.getHttpServer())
+      .post('/merchants')
+      .set('Authorization', `Bearer ${originalToken}`)
+      .send({
+        name: `Second Store ${suffix}`,
+        email: `second-${suffix}@example.com`,
+      })
+      .expect(201);
+    const secondMerchantId = created.body.data.id;
+
+    const originalMerchant = await request(app.getHttpServer())
+      .get('/merchant')
+      .set('Authorization', `Bearer ${originalToken}`)
+      .expect(200);
+    expect(originalMerchant.body.data.id).toBe(originalMerchantId);
+
+    const switched = await request(app.getHttpServer())
+      .post('/auth/switch-merchant')
+      .set('Authorization', `Bearer ${originalToken}`)
+      .send({ merchantId: secondMerchantId })
+      .expect(200);
+    const secondToken = switched.body.data.accessToken;
+    const updatedSlug = `renamed-store-${suffix}`;
+
+    const updated = await request(app.getHttpServer())
+      .patch('/merchant')
+      .set('Authorization', `Bearer ${secondToken}`)
+      .send({ name: 'Renamed Store', slug: updatedSlug })
+      .expect(200);
+    expect(updated.body.data).toMatchObject({
+      id: secondMerchantId,
+      name: 'Renamed Store',
+      slug: updatedSlug,
+    });
+
+    const dashboard = await request(app.getHttpServer())
+      .get('/merchant/dashboard')
+      .set('Authorization', `Bearer ${secondToken}`)
+      .expect(200);
+    expect(dashboard.body.data).toMatchObject({
+      merchant: { id: secondMerchantId },
+      memberships: { total: 1, active: 1, invited: 0, disabled: 0 },
+      pendingInvitations: 0,
+    });
+    expect(dashboard.body.data.recentActivity).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ action: 'merchant.updated' }),
+        expect.objectContaining({ action: 'merchant.created' }),
+      ]),
+    );
+
+    await request(app.getHttpServer())
+      .get('/merchant')
+      .set('Authorization', `Bearer ${secondToken}`)
+      .set('X-Merchant-ID', originalMerchantId)
+      .expect(403);
+  });
+
+  it('enforces merchant update permissions and unique slugs', async () => {
+    const ownerRegistration = await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send(registration())
+      .expect(201);
+    const targetMerchant = ownerRegistration.body.data.activeMerchant.merchant;
+
+    const viewerRegistration = await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send(registration())
+      .expect(201);
+    const viewerToken = viewerRegistration.body.data.accessToken;
+    const viewerId = viewerRegistration.body.data.user.id;
+    const prisma = app.get(PrismaService);
+    const viewerRole = await prisma.role.findUniqueOrThrow({
+      where: {
+        merchantId_code: {
+          merchantId: targetMerchant.id,
+          code: 'viewer',
         },
-      });
-      expect(res.body.user.password).toBeUndefined();
+      },
+    });
+    await prisma.merchantUser.create({
+      data: {
+        merchantId: targetMerchant.id,
+        userId: viewerId,
+        roleId: viewerRole.id,
+        status: 'ACTIVE',
+        joinedAt: new Date(),
+      },
     });
 
-    it('returns 409 when email is already registered', async () => {
-      const email = `dup-${unique()}@example.com`;
+    const switched = await request(app.getHttpServer())
+      .post('/auth/switch-merchant')
+      .set('Authorization', `Bearer ${viewerToken}`)
+      .send({ merchantId: targetMerchant.id })
+      .expect(200);
+    const scopedViewerToken = switched.body.data.accessToken;
 
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ email, password: 'password123', name: 'First' })
-        .expect(201);
+    await request(app.getHttpServer())
+      .patch('/merchant')
+      .set('Authorization', `Bearer ${scopedViewerToken}`)
+      .send({ name: 'Forbidden Rename' })
+      .expect(403);
 
-      const res = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ email, password: 'password123', name: 'Second' })
-        .expect(409);
-
-      expect(res.body.message).toMatch(/email already in use/i);
-    });
-
-    it('returns 400 when email is missing', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ password: 'password123' })
-        .expect(400);
-    });
-
-    it('returns 400 when password is missing', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ email: `missing-pw-${unique()}@example.com` })
-        .expect(400);
-    });
-  });
-
-  // ─── Login ──────────────────────────────────────────────────────────────────
-
-  describe('POST /auth/login', () => {
-    let registeredEmail: string;
-    const password = 'StrongPass!99';
-
-    beforeAll(async () => {
-      registeredEmail = `login-${unique()}@example.com`;
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ email: registeredEmail, password, name: 'Login User' })
-        .expect(201);
-    });
-
-    it('returns a JWT for valid credentials', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({ email: registeredEmail, password })
-        .expect(200);
-
-      expect(res.body).toMatchObject({
-        access_token: expect.any(String),
-        user: { email: registeredEmail },
-      });
-    });
-
-    it('returns 401 for wrong password', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({ email: registeredEmail, password: 'wrong-password' })
-        .expect(401);
-    });
-
-    it('returns 401 for unknown email', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({ email: `ghost-${unique()}@example.com`, password })
-        .expect(401);
-    });
-  });
-
-  // ─── Protected route: GET /auth/me ──────────────────────────────────────────
-
-  describe('GET /auth/me', () => {
-    let accessToken: string;
-    let registeredEmail: string;
-
-    beforeAll(async () => {
-      registeredEmail = `me-${unique()}@example.com`;
-      const res = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ email: registeredEmail, password: 'mypassword1', name: 'Me User' })
-        .expect(201);
-
-      accessToken = res.body.access_token;
-    });
-
-    it('returns the current user for a valid JWT', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/auth/me')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .expect(200);
-
-      expect(res.body).toMatchObject({
-        email: registeredEmail,
-        role: 'USER',
-      });
-      expect(res.body.password).toBeUndefined();
-    });
-
-    it('returns 401 when no token is provided', async () => {
-      await request(app.getHttpServer()).get('/auth/me').expect(401);
-    });
-
-    it('returns 401 for a malformed token', async () => {
-      await request(app.getHttpServer())
-        .get('/auth/me')
-        .set('Authorization', 'Bearer this.is.not.valid')
-        .expect(401);
-    });
-
-    it('returns 401 for an expired / tampered token', async () => {
-      const tampered = accessToken.slice(0, -5) + 'XXXXX';
-      await request(app.getHttpServer())
-        .get('/auth/me')
-        .set('Authorization', `Bearer ${tampered}`)
-        .expect(401);
-    });
-  });
-
-  // ─── Full round-trip simulation ──────────────────────────────────────────────
-
-  describe('Full auth flow simulation', () => {
-    it('register → login → access protected route', async () => {
-      const email = `flow-${unique()}@example.com`;
-      const password = 'FlowTest@123';
-
-      // 1. Register
-      const registerRes = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ email, password, name: 'Flow User' })
-        .expect(201);
-
-      expect(registerRes.body.access_token).toBeDefined();
-
-      // 2. Login with the same credentials
-      const loginRes = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({ email, password })
-        .expect(200);
-
-      const token = loginRes.body.access_token;
-      expect(token).toBeDefined();
-
-      // 3. Hit a protected endpoint
-      const meRes = await request(app.getHttpServer())
-        .get('/auth/me')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(200);
-
-      expect(meRes.body.email).toBe(email);
-    });
+    const secondOwner = await request(app.getHttpServer())
+      .post('/auth/register-merchant')
+      .send(registration())
+      .expect(201);
+    await request(app.getHttpServer())
+      .patch('/merchant')
+      .set('Authorization', `Bearer ${secondOwner.body.data.accessToken}`)
+      .send({ slug: targetMerchant.slug })
+      .expect(409);
   });
 });

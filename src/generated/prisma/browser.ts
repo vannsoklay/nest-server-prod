@@ -22,3 +22,153 @@ export * from './enums.js';
  * 
  */
 export type User = Prisma.UserModel
+/**
+ * Model AuthIdentity
+ * 
+ */
+export type AuthIdentity = Prisma.AuthIdentityModel
+/**
+ * Model Merchant
+ * 
+ */
+export type Merchant = Prisma.MerchantModel
+/**
+ * Model Product
+ * 
+ */
+export type Product = Prisma.ProductModel
+/**
+ * Model MerchantTheme
+ * 
+ */
+export type MerchantTheme = Prisma.MerchantThemeModel
+/**
+ * Model ProductVariant
+ * 
+ */
+export type ProductVariant = Prisma.ProductVariantModel
+/**
+ * Model ProductMedia
+ * 
+ */
+export type ProductMedia = Prisma.ProductMediaModel
+/**
+ * Model ProductChannelVisibility
+ * 
+ */
+export type ProductChannelVisibility = Prisma.ProductChannelVisibilityModel
+/**
+ * Model InventoryStock
+ * 
+ */
+export type InventoryStock = Prisma.InventoryStockModel
+/**
+ * Model InventoryReservation
+ * 
+ */
+export type InventoryReservation = Prisma.InventoryReservationModel
+/**
+ * Model CheckoutSession
+ * 
+ */
+export type CheckoutSession = Prisma.CheckoutSessionModel
+/**
+ * Model CheckoutItem
+ * 
+ */
+export type CheckoutItem = Prisma.CheckoutItemModel
+/**
+ * Model Order
+ * 
+ */
+export type Order = Prisma.OrderModel
+/**
+ * Model OrderItem
+ * 
+ */
+export type OrderItem = Prisma.OrderItemModel
+/**
+ * Model PaymentProvider
+ * 
+ */
+export type PaymentProvider = Prisma.PaymentProviderModel
+/**
+ * Model Payment
+ * 
+ */
+export type Payment = Prisma.PaymentModel
+/**
+ * Model PaymentWebhookEvent
+ * 
+ */
+export type PaymentWebhookEvent = Prisma.PaymentWebhookEventModel
+/**
+ * Model Notification
+ * 
+ */
+export type Notification = Prisma.NotificationModel
+/**
+ * Model SocialPost
+ * 
+ */
+export type SocialPost = Prisma.SocialPostModel
+/**
+ * Model ShoppableHotspot
+ * 
+ */
+export type ShoppableHotspot = Prisma.ShoppableHotspotModel
+/**
+ * Model SocialPostPublishLog
+ * 
+ */
+export type SocialPostPublishLog = Prisma.SocialPostPublishLogModel
+/**
+ * Model WebsiteArticle
+ * 
+ */
+export type WebsiteArticle = Prisma.WebsiteArticleModel
+/**
+ * Model InventoryMovement
+ * 
+ */
+export type InventoryMovement = Prisma.InventoryMovementModel
+/**
+ * Model MerchantUser
+ * 
+ */
+export type MerchantUser = Prisma.MerchantUserModel
+/**
+ * Model Role
+ * 
+ */
+export type Role = Prisma.RoleModel
+/**
+ * Model Permission
+ * 
+ */
+export type Permission = Prisma.PermissionModel
+/**
+ * Model RolePermission
+ * 
+ */
+export type RolePermission = Prisma.RolePermissionModel
+/**
+ * Model Session
+ * 
+ */
+export type Session = Prisma.SessionModel
+/**
+ * Model PasswordResetToken
+ * 
+ */
+export type PasswordResetToken = Prisma.PasswordResetTokenModel
+/**
+ * Model MerchantInvitation
+ * 
+ */
+export type MerchantInvitation = Prisma.MerchantInvitationModel
+/**
+ * Model AuditLog
+ * 
+ */
+export type AuditLog = Prisma.AuditLogModel

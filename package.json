@@ -4,14 +4,29 @@
   "description": "",
   "author": "",
   "private": true,
+  "packageManager": "pnpm@10.30.1",
+  "engines": {
+    "node": ">=26.5.0"
+  },
+  "imports": {
+    "#app/*": "./dist/*"
+  },
   "license": "UNLICENSED",
   "scripts": {
+    "dev": "turbo dev --filter=./apps/*",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "mfe:dev": "turbo dev --filter=@repo/merchant --filter=@repo/pos --filter=@repo/storefront",
+    "mfe:build": "turbo build --filter=./apps/* --filter=./packages/*",
+    "mfe:lint": "turbo lint --filter=@repo/merchant --filter=@repo/pos --filter=@repo/storefront",
+    "mfe:type-check": "turbo type-check --filter=./apps/* --filter=./packages/*",
+    "merchant:dev": "pnpm --filter @repo/merchant dev",
+    "pos:dev": "pnpm --filter @repo/pos dev",
+    "storefront:dev": "pnpm --filter @repo/storefront dev",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "lint:check": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "type-check": "tsc --noEmit",
@@ -19,10 +34,11 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:prod": "prisma migrate deploy",
+    "prisma:reset": "prisma migrate reset --force",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed"
   },
@@ -36,13 +52,16 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.1.27",
     "@nestjs/swagger": "^11.4.4",
+    "@nestjs/websockets": "^11.1.27",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
     "@types/pg": "^8.20.0",
+    "ajv": "^8.20.0",
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
@@ -54,7 +73,8 @@
     "pg": "^8.21.0",
     "prisma": "^7.8.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -75,6 +95,7 @@
     "globals": "^17.0.0",
     "jest": "^30.0.0",
     "prettier": "^3.4.2",
+    "socket.io-client": "^4.8.3",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
@@ -83,6 +104,7 @@
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.22.4",
     "typescript": "^5.7.3",
+    "turbo": "^2.6.3",
     "typescript-eslint": "^8.20.0"
   },
   "jest": {
@@ -100,6 +122,10 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1",
+      "^#app/(.*)$": "<rootDir>/$1"
+    }
   }
 }

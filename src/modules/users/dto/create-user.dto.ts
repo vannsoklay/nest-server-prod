@@ -1,24 +1,22 @@
+import { PlatformRole } from '#app/generated/prisma/enums';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
-import { Role } from '../../../generated/prisma/enums';
+import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
-  email: string;
+  email!: string;
 
-  @ApiProperty({ example: 'strongPassword123', minLength: 6 })
+  @ApiProperty({ example: 'Jane Doe' })
   @IsString()
-  @MinLength(6)
-  password: string;
+  fullName!: string;
 
-  @ApiPropertyOptional({ example: 'John Doe' })
+  @ApiProperty({ example: 'StrongPassword123!', minLength: 10 })
   @IsString()
-  @IsOptional()
-  name?: string;
+  @MinLength(10)
+  password!: string;
 
-  @ApiPropertyOptional({ enum: Role, default: Role.USER })
-  @IsEnum(Role)
-  @IsOptional()
-  role?: Role;
+  @ApiPropertyOptional({ enum: PlatformRole, default: PlatformRole.USER })
+  @IsEnum(PlatformRole)
+  platformRole: PlatformRole = PlatformRole.USER;
 }
