@@ -74,27 +74,55 @@ export function SectionEditor({
           onChange({ ...config, hero: { ...config.hero, imageUrl } })
         }
       />
-      <label className="block text-xs font-medium">
-        Product grid columns
-        <Input
-          className="mt-1 w-full"
-          max={6}
-          min={1}
-          type="range"
-          value={config.layout.productGridColumns}
-          onChange={(event) =>
-            onChange({
-              ...config,
-              layout: {
-                ...config.layout,
-                productGridColumns: Number(event.target.value),
-              },
-            })
-          }
-        />
-      </label>
+      <GridColumnsControl config={config} onChange={onChange} />
     </div>
   );
+}
+
+function GridColumnsControl({
+  config,
+  onChange,
+}: {
+  config: ThemeConfig;
+  onChange: (config: ThemeConfig) => void;
+}) {
+  const selectedValue = normalizeProductGridColumns(
+    config.layout.productGridColumns,
+  );
+
+  return (
+    <div className="grid gap-2">
+      <span className="text-xs font-medium">Product grid columns</span>
+      <div className="grid grid-cols-3 gap-2 rounded-xl border border-separator bg-background p-1">
+        {[2, 3, 5].map((columns) => (
+          <Button
+            className={selectedValue === columns ? "" : "bg-transparent"}
+            key={columns}
+            size="sm"
+            type="button"
+            variant={selectedValue === columns ? "primary" : "tertiary"}
+            onPress={() =>
+              onChange({
+                ...config,
+                layout: {
+                  ...config.layout,
+                  productGridColumns: columns,
+                },
+              })
+            }
+          >
+            {columns}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function normalizeProductGridColumns(value: number) {
+  if (value === 2 || value === 3 || value === 5) return value;
+  if (value >= 5) return 5;
+  return 3;
 }
 
 export function SectionSortableList({

@@ -1,10 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 
 import { Button } from "@repo/ui";
 import { queryKeys } from "@repo/query-client";
 
+import { DashboardIcon } from "../dashboard-icon";
 import { DashboardHomeLoading } from "./dashboard-home-loading";
 import { MetricCard } from "./metric-card";
 import { RecentOrders } from "./recent-orders";
@@ -65,27 +67,47 @@ export function DashboardOverview() {
 
   const data = dashboardQuery.data;
   const isEmpty = data.totalOrders === 0 && data.inventoryCount === 0;
+  const paidOrderCount = data.paidOrders.length;
+  const conversionLabel =
+    data.totalOrders > 0
+      ? `${Math.round((paidOrderCount / data.totalOrders) * 100)}% paid`
+      : "No orders yet";
 
   return (
-    <section className="space-y-6">
-      <div>
-        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-          Overview
-        </p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-normal">
-          Commerce at a glance
-        </h2>
-        <p className="mt-2 text-sm text-muted">
-          Revenue, orders, and inventory health across your active merchant.
-        </p>
+    <section className="space-y-5">
+      <div className="flex flex-col gap-4 rounded-2xl border border-separator bg-surface p-5 shadow-sm sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase text-accent">
+            <DashboardIcon className="size-4" name="grid" />
+            Overview
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-normal">
+            Commerce at a glance
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+            Revenue, orders, and inventory health across your active merchant.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-72">
+          <SummaryPill label="Inventory" value={data.inventoryCount} />
+          <SummaryPill label="Payment" value={conversionLabel} />
+        </div>
       </div>
       {isEmpty && (
-        <div className="rounded-lg border border-dashed border-emerald-300 bg-emerald-50 px-6 py-5 dark:border-emerald-900/70 dark:bg-emerald-950/40">
-          <p className="font-semibold">Your workspace is ready</p>
-          <p className="mt-1 text-sm text-muted">
-            Add your first product and inventory quantity to start seeing live
-            dashboard insights.
-          </p>
+        <div className="grid gap-4 rounded-2xl border border-dashed border-accent/40 bg-accent/5 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div>
+            <p className="font-semibold">Your workspace is ready</p>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+              Add your first product and inventory quantity to start seeing live
+              dashboard insights.
+            </p>
+          </div>
+          <Link
+            className="inline-flex h-10 items-center justify-center rounded-lg bg-accent px-4 text-sm font-semibold text-accent-foreground"
+            href="/products/new"
+          >
+            Add product
+          </Link>
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -100,7 +122,7 @@ export function DashboardOverview() {
         />
         <MetricCard
           accent="accent"
-          helper="Across all sales channels"
+          helper={conversionLabel}
           icon="orders"
           label="Total orders"
           value={data.totalOrders.toLocaleString()}
@@ -120,11 +142,26 @@ export function DashboardOverview() {
           value={data.lowStock.length.toLocaleString()}
         />
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-3">
         <SalesChart currency={data.currency} sales={data.sales} />
         <StockAlerts alerts={data.lowStock} />
         <RecentOrders orders={data.recentOrders} />
       </div>
     </section>
+  );
+}
+
+function SummaryPill({
+  label,
+  value,
+}: {
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <div className="rounded-xl border border-separator bg-background px-3 py-2">
+      <p className="text-[11px] font-medium uppercase text-muted">{label}</p>
+      <p className="mt-1 truncate font-semibold">{value}</p>
+    </div>
   );
 }

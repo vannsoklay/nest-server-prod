@@ -40,6 +40,8 @@ export function PurchasePanel({
   const canBuy =
     product.isAvailable && product.isPurchasable && selectedTargetAvailable;
   const price = selectedVariant?.price ?? product.price;
+  const unitPrice = Number(price);
+  const estimatedTotal = unitPrice * quantity;
   const checkout = useMutation({
     mutationFn: async () => {
       const customer = (await getCustomerSession())?.user;
@@ -78,6 +80,9 @@ export function PurchasePanel({
     : product.isPurchasable
       ? "Sold out"
       : "Browsing only";
+  const unavailableMessage = product.isPurchasable
+    ? "This option is not available right now."
+    : "This product is published for browsing but checkout is disabled.";
   const scrollOptions = (direction: "next" | "previous") => {
     const carousel = optionCarouselRef.current;
     if (!carousel) return;
@@ -91,9 +96,13 @@ export function PurchasePanel({
 
   return (
     <Card
-      className="shadow-none lg:sticky lg:top-28"
+      className="border shadow-none lg:sticky lg:top-28"
       variant="secondary"
-      style={{ borderRadius: radiusValue(config.layout.borderRadius) }}
+      style={{
+        backgroundColor: `color-mix(in srgb, ${config.colors.background} 96%, ${config.colors.text})`,
+        borderColor: `color-mix(in srgb, ${config.colors.text} 12%, transparent)`,
+        borderRadius: radiusValue(config.layout.borderRadius),
+      }}
     >
       <Card.Content className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
@@ -106,7 +115,7 @@ export function PurchasePanel({
         </div>
 
         <h1
-          className="mt-4 text-3xl font-semibold tracking-tight sm:text-5xl"
+          className="mt-4 text-3xl font-semibold tracking-normal sm:text-5xl"
           style={{
             fontFamily: `${config.typography.headingFont}, ui-sans-serif, system-ui, sans-serif`,
           }}
@@ -115,9 +124,12 @@ export function PurchasePanel({
         </h1>
 
         <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
-          <p className="text-2xl font-semibold">
-            {formatCurrency(price, product.currency)}
-          </p>
+          <div>
+            <p className="text-sm opacity-55">Unit price</p>
+            <p className="text-2xl font-semibold">
+              {formatCurrency(price, product.currency)}
+            </p>
+          </div>
           {hasVariants && (
             <p className="text-sm opacity-60">
               {product.variants.length + 1} options
@@ -191,6 +203,24 @@ export function PurchasePanel({
           </fieldset>
         )}
 
+        {!canBuy && (
+          <div
+            className="mt-6 flex gap-3 border p-4 text-sm"
+            style={{
+              backgroundColor: `color-mix(in srgb, ${config.colors.accent} 8%, ${config.colors.background})`,
+              borderColor: `color-mix(in srgb, ${config.colors.accent} 20%, transparent)`,
+              borderRadius: radiusValue(config.layout.borderRadius),
+            }}
+          >
+            <Icon
+              className="mt-0.5 size-4 shrink-0"
+              icon="gravity-ui:circle-info"
+              style={{ color: config.colors.accent }}
+            />
+            <p className="leading-6 opacity-75">{unavailableMessage}</p>
+          </div>
+        )}
+
         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
           <div
             className="flex h-12 items-center gap-1 p-1 shadow-none"
@@ -238,7 +268,7 @@ export function PurchasePanel({
             </Button>
           </div>
           <Button
-            className="h-12 flex-1 px-6 text-sm font-bold text-white"
+            className="h-12 flex-1 px-6 text-sm font-bold text-white shadow-lg shadow-black/10"
             isDisabled={!canBuy || checkout.isPending}
             variant="primary"
             style={{
@@ -251,6 +281,19 @@ export function PurchasePanel({
             <Icon className="size-4" icon="gravity-ui:shopping-cart" />
             {checkout.isPending ? "Reserving stock..." : "Buy now"}
           </Button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+          <p className="opacity-60">Estimated total</p>
+          <p className="font-semibold">
+            {formatCurrency(estimatedTotal, product.currency)}
+          </p>
+        </div>
+
+        <div className="mt-5 grid gap-2 text-xs font-medium opacity-65 sm:grid-cols-3">
+          <Assurance icon="gravity-ui:shield-check" label="Secure checkout" />
+          <Assurance icon="gravity-ui:clock" label="Fast reservation" />
+          <Assurance icon="gravity-ui:receipt" label="Order receipt" />
         </div>
 
         {checkout.isError && (
@@ -281,6 +324,7 @@ export function PurchasePanel({
                 )
               }
             >
+              <Icon className="size-4" icon="gravity-ui:logo-facebook" />
               Facebook
             </Button>
             <Button
@@ -295,6 +339,7 @@ export function PurchasePanel({
                 )
               }
             >
+              <Icon className="size-4" icon="gravity-ui:logo-x" />
               X
             </Button>
             <Button
@@ -326,6 +371,15 @@ export function PurchasePanel({
         </div>
       </Card.Content>
     </Card>
+  );
+}
+
+function Assurance({ icon, label }: { icon: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <Icon className="size-3.5" icon={icon} />
+      <span>{label}</span>
+    </span>
   );
 }
 

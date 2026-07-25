@@ -1,21 +1,20 @@
 import Link from "next/link";
 
+import { DashboardIcon } from "@/components/dashboard/dashboard-icon";
 import type { DashboardInventoryStock } from "@/types/dashboard";
 
 export function StockAlerts({ alerts }: { alerts: DashboardInventoryStock[] }) {
   const visibleAlerts = alerts.slice(0, 5);
 
   return (
-    <section className="rounded-lg border border-separator bg-surface shadow-none">
+    <section className="rounded-2xl border border-separator bg-surface shadow-sm">
       <div className="flex items-center justify-between border-b border-separator px-5 py-4">
         <div>
           <h3 className="font-semibold">Stock alerts</h3>
-          <p className="mt-1 text-xs text-muted">
-            Items requiring attention
-          </p>
+          <p className="mt-1 text-xs text-muted">Items requiring attention</p>
         </div>
         {alerts.length > 0 && (
-          <span className="rounded-full bg-red-50 px-2 py-1 text-xs font-bold text-red-700 dark:bg-red-950/50 dark:text-red-300">
+          <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-bold text-red-700 dark:text-red-300">
             {alerts.length}
           </span>
         )}
@@ -24,12 +23,12 @@ export function StockAlerts({ alerts }: { alerts: DashboardInventoryStock[] }) {
         <div className="divide-y divide-separator">
           {visibleAlerts.map((stock) => (
             <Link
-              className="flex items-center gap-3 px-5 py-3 transition hover:bg-surface-secondary"
+              className="flex items-center gap-3 px-5 py-3.5 transition hover:bg-surface-secondary/70"
               href={`/inventory?productId=${stock.productId}`}
               key={stock.id}
             >
               <span
-                className={`size-2 shrink-0 rounded-full ${
+                className={`size-2.5 shrink-0 rounded-full ${
                   stock.availableStock <= 0 ? "bg-red-500" : "bg-amber-500"
                 }`}
               />
@@ -43,10 +42,10 @@ export function StockAlerts({ alerts }: { alerts: DashboardInventoryStock[] }) {
                 </span>
               </span>
               <span
-                className={`text-xs font-bold ${
+                className={`rounded-lg px-2 py-1 text-xs font-bold ${
                   stock.availableStock <= 0
-                    ? "text-red-700 dark:text-red-300"
-                    : "text-amber-700 dark:text-amber-300"
+                    ? "bg-red-500/10 text-red-700 dark:text-red-300"
+                    : "bg-amber-500/10 text-amber-700 dark:text-amber-300"
                 }`}
               >
                 {stock.availableStock <= 0
@@ -58,8 +57,8 @@ export function StockAlerts({ alerts }: { alerts: DashboardInventoryStock[] }) {
         </div>
       ) : (
         <div className="px-5 py-12 text-center">
-          <div className="mx-auto grid size-10 place-items-center rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
-            <span aria-hidden="true">✓</span>
+          <div className="mx-auto grid size-10 place-items-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+            <DashboardIcon name="inventory" />
           </div>
           <p className="mt-3 text-sm font-medium">Stock levels look healthy</p>
           <p className="mt-1 text-xs text-muted">

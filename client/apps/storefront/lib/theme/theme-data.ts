@@ -14,7 +14,7 @@ const defaultTypography: ThemeConfig["typography"] = {
 
 const defaultLayout: ThemeConfig["layout"] = {
   borderRadius: "medium",
-  productGridColumns: 4,
+  productGridColumns: 3,
   showHero: true,
   spacing: "comfortable",
 };
@@ -44,6 +44,9 @@ export function normalizeThemeConfig(
     layout: {
       ...defaultLayout,
       ...value.layout,
+      productGridColumns: normalizeProductGridColumns(
+        value.layout?.productGridColumns,
+      ),
     },
     hero: {
       title: value.hero?.title ?? "Welcome to our store",
@@ -70,4 +73,10 @@ export function normalizeThemeConfig(
       faviconUrl: value.storefront?.faviconUrl ?? "",
     },
   };
+}
+
+function normalizeProductGridColumns(value?: number) {
+  if (value === 2 || value === 3 || value === 5) return value;
+  if (value && value >= 5) return 5;
+  return 3;
 }

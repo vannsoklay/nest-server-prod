@@ -1,21 +1,20 @@
 import Link from "next/link";
 
+import { DashboardIcon } from "@/components/dashboard/dashboard-icon";
 import type { DashboardOrder } from "@/types/dashboard";
 import { formatCurrency } from "@/lib/formatters/currency";
 import { formatDate } from "@/lib/formatters/date";
 
 export function RecentOrders({ orders }: { orders: DashboardOrder[] }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-separator bg-surface shadow-none lg:col-span-2">
+    <section className="overflow-hidden rounded-2xl border border-separator bg-surface shadow-sm xl:col-span-2">
       <div className="flex items-center justify-between border-b border-separator px-5 py-4">
         <div>
           <h3 className="font-semibold">Recent orders</h3>
-          <p className="mt-1 text-xs text-muted">
-            Latest customer activity
-          </p>
+          <p className="mt-1 text-xs text-muted">Latest customer activity</p>
         </div>
         <Link
-          className="text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400"
+          className="inline-flex h-9 items-center rounded-lg px-3 text-xs font-semibold text-accent transition hover:bg-accent/10"
           href="/orders"
         >
           View all
@@ -24,7 +23,7 @@ export function RecentOrders({ orders }: { orders: DashboardOrder[] }) {
       {orders.length ? (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-surface-secondary text-xs text-muted">
+            <thead className="bg-surface-secondary text-xs text-muted">
               <tr>
                 <th className="px-5 py-3 font-medium">Order</th>
                 <th className="px-5 py-3 font-medium">Customer</th>
@@ -35,12 +34,12 @@ export function RecentOrders({ orders }: { orders: DashboardOrder[] }) {
             <tbody>
               {orders.map((order) => (
                 <tr
-                  className="border-t border-separator first:border-0 hover:bg-surface-secondary"
+                  className="border-t border-separator first:border-0 hover:bg-surface-secondary/70"
                   key={order.id}
                 >
                   <td className="px-5 py-3">
                     <Link
-                      className="font-semibold hover:text-emerald-700 dark:hover:text-emerald-400"
+                      className="font-semibold hover:text-accent"
                       href={`/orders/${order.id}`}
                     >
                       {order.orderNumber}
@@ -74,6 +73,9 @@ export function RecentOrders({ orders }: { orders: DashboardOrder[] }) {
         </div>
       ) : (
         <div className="px-5 py-12 text-center">
+          <div className="mx-auto grid size-10 place-items-center rounded-xl bg-surface-secondary text-muted">
+            <DashboardIcon name="orders" />
+          </div>
           <p className="text-sm font-medium">No orders yet</p>
           <p className="mt-1 text-xs text-muted">
             New customer orders will appear here.
@@ -98,7 +100,7 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide ${style}`}
+      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${style}`}
     >
       {status.replaceAll("_", " ")}
     </span>

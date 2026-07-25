@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { Icon } from "@iconify/react";
 import Link from "next/link";
 
 import type { PublicMerchant } from "@/types/storefront";
@@ -34,13 +35,13 @@ export function StorefrontShell({
   return (
     <div className="min-h-dvh" style={style}>
       <header
-        className="sticky top-0 z-30 border-b backdrop-blur-xl"
+        className="sticky top-0 z-30 border-b shadow-[0_1px_0_rgb(255_255_255_/_0.32)] backdrop-blur-xl"
         style={{
-          backgroundColor: `color-mix(in srgb, ${config.colors.background} 88%, transparent)`,
+          backgroundColor: `color-mix(in srgb, ${config.colors.background} 92%, transparent)`,
           borderColor: `color-mix(in srgb, ${config.colors.text} 14%, transparent)`,
         }}
       >
-        <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-5 px-5 sm:px-8">
+        <div className="mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
           <Link
             className="flex min-w-0 items-center gap-3"
             href={`/${merchant.slug}`}
@@ -66,7 +67,7 @@ export function StorefrontShell({
               </span>
             )}
             <span
-              className="truncate text-base font-semibold"
+              className="min-w-0 truncate text-base font-semibold"
               style={{
                 fontFamily: `${config.typography.headingFont}, ui-sans-serif, system-ui, sans-serif`,
               }}
@@ -74,11 +75,28 @@ export function StorefrontShell({
               {merchant.name}
             </span>
           </Link>
-          <nav className="flex items-center gap-5 text-sm font-medium">
-            <Link href={`/${merchant.slug}#products`}>Shop</Link>
+          <nav className="flex shrink-0 items-center gap-2 text-sm font-medium sm:gap-3">
+            <Link
+              className="inline-flex h-10 items-center gap-2 px-3"
+              href={`/${merchant.slug}#products`}
+              style={{
+                borderRadius: radiusValue(config.layout.borderRadius),
+              }}
+            >
+              <Icon className="size-4" icon="gravity-ui:magnifier" />
+              <span className="hidden sm:inline">Shop</span>
+            </Link>
             {merchant.email && (
-              <a className="hidden sm:inline" href={`mailto:${merchant.email}`}>
-                Contact
+              <a
+                aria-label={`Contact ${merchant.name}`}
+                className="hidden h-10 items-center gap-2 px-3 sm:inline-flex"
+                href={`mailto:${merchant.email}`}
+                style={{
+                  borderRadius: radiusValue(config.layout.borderRadius),
+                }}
+              >
+                <Icon className="size-4" icon="gravity-ui:envelope" />
+                <span>Contact</span>
               </a>
             )}
             <StorefrontCustomerAuth />
