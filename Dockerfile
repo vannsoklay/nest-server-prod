@@ -24,8 +24,9 @@ RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
 COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
 
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["sh", "-c", "pnpm run prisma:migrate:prod && node dist/main"]
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node dist/main"]
