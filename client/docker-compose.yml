@@ -79,7 +79,9 @@ services:
       - merchant
       - pos
       - storefront
-
+networks:
+  commerce_network:
+    external: true
 volumes:
   postgres_data:
   redis_data:
