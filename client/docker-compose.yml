@@ -1,5 +1,4 @@
 services:
-
   merchant:
     build:
       context: ./
@@ -23,8 +22,8 @@ services:
       NEXT_PUBLIC_TELEGRAM_REDIRECT_URI: ${NEXT_PUBLIC_TELEGRAM_REDIRECT_URI:-}
     expose:
       - "3000"
-    depends_on:
-      - app
+    networks:
+      - commerce_network
 
   pos:
     build:
@@ -40,8 +39,8 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
     expose:
       - "3001"
-    depends_on:
-      - app
+    networks:
+      - commerce_network
 
   storefront:
     build:
@@ -65,8 +64,8 @@ services:
       NEXT_PUBLIC_TELEGRAM_REDIRECT_URI: ${NEXT_PUBLIC_TELEGRAM_REDIRECT_URI:-}
     expose:
       - "3002"
-    depends_on:
-      - app
+    networks:
+      - commerce_network
 
   nginx:
     image: nginx:1.27-alpine
