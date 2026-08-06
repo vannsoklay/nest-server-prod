@@ -2,7 +2,7 @@ services:
 
   merchant:
     build:
-      context: ./client
+      context: ./
       dockerfile: apps/merchant/Dockerfile
     container_name: commerce_merchant
     restart: unless-stopped
@@ -28,7 +28,7 @@ services:
 
   pos:
     build:
-      context: ./client
+      context: ./
       dockerfile: apps/pos/Dockerfile
     container_name: commerce_pos
     restart: unless-stopped
@@ -45,7 +45,7 @@ services:
 
   storefront:
     build:
-      context: ./client
+      context: ./
       dockerfile: apps/storefront/Dockerfile
     container_name: commerce_storefront
     restart: unless-stopped
