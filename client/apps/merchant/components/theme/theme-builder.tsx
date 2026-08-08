@@ -533,18 +533,19 @@ function GridColumnsSelect({
   value: number;
   onChange: (value: number) => void;
 }) {
-  const options = [2, 3, 4, 6];
+  const options = [2, 3, 5];
+  const selectedValue = normalizeProductGridColumns(value);
   return (
     <div className="grid gap-2">
       <div className="flex items-center justify-between gap-3">
         <Label className="text-xs font-medium">{label}</Label>
         <span className="rounded-lg bg-surface-secondary px-2 py-1 font-mono text-xs text-muted">
-          {value} grid
+          {selectedValue} columns
         </span>
       </div>
-      <div className="grid grid-cols-4 gap-2 rounded-xl border border-separator bg-background p-1">
+      <div className="grid grid-cols-3 gap-2 rounded-xl border border-separator bg-background p-1">
         {options.map((columns) => {
-          const isSelected = value === columns;
+          const isSelected = selectedValue === columns;
 
           return (
             <Button
@@ -556,13 +557,19 @@ function GridColumnsSelect({
               variant={isSelected ? 'primary' : 'tertiary'}
               onPress={() => onChange(columns)}
             >
-              {columns} grid
+              {columns}
             </Button>
           );
         })}
       </div>
     </div>
   );
+}
+
+function normalizeProductGridColumns(value: number) {
+  if (value === 2 || value === 3 || value === 5) return value;
+  if (value >= 5) return 5;
+  return 3;
 }
 
 function ThemePreview({
@@ -656,9 +663,8 @@ function PreviewSection({
           className="grid"
           style={{
             gap,
-            gridTemplateColumns: `repeat(${Math.min(
+            gridTemplateColumns: `repeat(${normalizeProductGridColumns(
               config.layout.productGridColumns,
-              4,
             )}, minmax(0, 1fr))`,
           }}
         >

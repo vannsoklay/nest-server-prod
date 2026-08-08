@@ -467,24 +467,7 @@ function SectionContent({
         value={config.hero.imageUrl}
         onChange={(imageUrl) => patch({ hero: { ...config.hero, imageUrl } })}
       />
-      <label className="block text-xs font-medium">
-        Product grid columns
-        <Input
-          className="mt-1 w-full"
-          max={6}
-          min={1}
-          type="range"
-          value={config.layout.productGridColumns}
-          onChange={(event) =>
-            patch({
-              layout: {
-                ...config.layout,
-                productGridColumns: Number(event.target.value),
-              },
-            })
-          }
-        />
-      </label>
+      <GridColumnsControl config={config} patch={patch} />
       {fields.map(({ key, label }) => (
         <TextField
           key={key}
@@ -500,6 +483,51 @@ function SectionContent({
       />
     </div>
   );
+}
+
+function GridColumnsControl({
+  config,
+  patch,
+}: {
+  config: ThemeConfig;
+  patch: (value: Partial<ThemeConfig>) => void;
+}) {
+  const selectedValue = normalizeProductGridColumns(
+    config.layout.productGridColumns,
+  );
+
+  return (
+    <div className="grid gap-2">
+      <Label className="text-xs font-medium">Product grid columns</Label>
+      <div className="grid grid-cols-3 gap-2 rounded-xl border border-separator bg-background p-1">
+        {[2, 3, 5].map((columns) => (
+          <Button
+            className={selectedValue === columns ? "" : "bg-transparent"}
+            key={columns}
+            size="sm"
+            type="button"
+            variant={selectedValue === columns ? "primary" : "tertiary"}
+            onPress={() =>
+              patch({
+                layout: {
+                  ...config.layout,
+                  productGridColumns: columns,
+                },
+              })
+            }
+          >
+            {columns}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function normalizeProductGridColumns(value: number) {
+  if (value === 2 || value === 3 || value === 5) return value;
+  if (value >= 5) return 5;
+  return 3;
 }
 
 function ThemePreview({
@@ -593,9 +621,8 @@ function PreviewSection({
           className="grid"
           style={{
             gap,
-            gridTemplateColumns: `repeat(${Math.min(
+            gridTemplateColumns: `repeat(${normalizeProductGridColumns(
               config.layout.productGridColumns,
-              4,
             )}, minmax(0, 1fr))`,
           }}
         >

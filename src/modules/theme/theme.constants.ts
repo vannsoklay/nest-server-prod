@@ -57,7 +57,7 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
     bodyFont: 'Inter',
   },
   layout: {
-    productGridColumns: 4,
+    productGridColumns: 3,
     showHero: true,
     borderRadius: 'medium',
     spacing: 'comfortable',
@@ -132,8 +132,7 @@ export const THEME_CONFIG_SCHEMA = {
       properties: {
         productGridColumns: {
           type: 'integer',
-          minimum: 1,
-          maximum: 6,
+          enum: [2, 3, 5],
         },
         showHero: { type: 'boolean' },
         borderRadius: {

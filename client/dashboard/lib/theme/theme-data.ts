@@ -74,7 +74,9 @@ export function normalizeThemeConfig(config: PartialThemeConfig): ThemeConfig {
     colors: config.colors,
     typography: config.typography,
     layout: {
-      productGridColumns: config.layout.productGridColumns,
+      productGridColumns: normalizeProductGridColumns(
+        config.layout.productGridColumns,
+      ),
       showHero: config.layout.showHero,
       borderRadius: config.layout.borderRadius ?? "medium",
       spacing: config.layout.spacing ?? "comfortable",
@@ -104,4 +106,10 @@ export function normalizeThemeConfig(config: PartialThemeConfig): ThemeConfig {
       faviconUrl: config.storefront?.faviconUrl ?? "",
     },
   };
+}
+
+function normalizeProductGridColumns(value: number) {
+  if (value === 2 || value === 3 || value === 5) return value;
+  if (value >= 5) return 5;
+  return 3;
 }

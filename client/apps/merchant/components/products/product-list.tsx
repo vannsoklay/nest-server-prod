@@ -200,10 +200,10 @@ export function ProductList() {
         <Table
           variant="secondary"
         >
-          <Table.ScrollContainer className="max-h-[calc(100dvh-22rem)]">
+          <Table.ScrollContainer>
             <Table.Content
               aria-label="Products"
-              className="h-full min-w-[1120px] table-fixed text-left text-sm"
+              className="table-fixed text-left text-sm"
               selectedKeys={new Set(selected)}
               selectionMode={canDelete ? 'multiple' : 'none'}
               onSelectionChange={updateSelection}
@@ -284,7 +284,7 @@ export function ProductList() {
                     );
                   }
                   return (
-                    <div className="min-h-80 md:min-h-[calc(100dvh-24rem)]">
+                    <div className="min-h-80 md:min-h-[calc(100dvh-34rem)]">
                       <ProductEmptyState
                         canCreate={canCreate}
                         channel={channel}
